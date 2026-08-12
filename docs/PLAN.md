@@ -11,15 +11,15 @@ explicitly out of scope (SPEC "Out of Scope") — stdin is the only required inp
 ## Milestone 1: Minimal Working Solution (all must-haves, happy path)
 
 1. **[CLEANUP]** Set up project skeleton: build tool (Maven or Gradle), packages
-   `lexer`, `parser`, `ast`, `eval`, `cli`, and a test source set with JUnit 5.
+   `tokenizer`, `parser`, `ast`, `eval`, `cli`, and a test source set with JUnit 5.
    *Design ref*: Minimal Architecture.
    *DoD*: `test` task runs (zero tests yet); package layout matches the pipeline.
 
-2. **[HAPPY PATH]** Implement `Token`/`TokenType` and `Lexer` for: `NUMBER` (digits,
+2. **[HAPPY PATH]** Implement `Token`/`TokenType` and `Tokenizer` for: `NUMBER` (digits,
    optional `.` and fraction digits), `IDENT`, `+ - * / % ( ) =`, `++`, `--`, with
-   whitespace skipped. The lexer only captures raw text — it does not range-check.
+   whitespace skipped. The tokenizer only captures raw text — it does not range-check.
    *Design ref*: Data Structures — Token.
-   *DoD*: `LexerTest` tokenizes all 5 SPEC example lines correctly, plus a 30-digit
+   *DoD*: `TokenizerTest` tokenizes all 5 SPEC example lines correctly, plus a 30-digit
    literal (still just a raw token at this stage — range-checking happens in the
    parser, step 4), `3.14 * 2`, `7 % 3`, and `-5 + 3` into the expected token lists
    with raw text intact.
@@ -79,7 +79,7 @@ explicitly out of scope (SPEC "Out of Scope") — stdin is the only required inp
    `FloatValue(6.28)` → `"6.28"`, `FloatValue(1.0/0.0)` → `"Infinity"`.
 
 8. **[HAPPY PATH]** Implement the CLI entry point: read lines from stdin in order
-   (REQ-006), run lexer→parser→evaluator per line against one shared `Environment`,
+   (REQ-006), run tokenizer→parser→evaluator per line against one shared `Environment`,
    then join the `Formatter`'s per-variable strings as `(k1=v1,k2=v2,...)` in
    insertion order and print to stdout (REQ-007).
    *Design ref*: Main Flow step 3; Interface Requirements.
@@ -100,7 +100,7 @@ explicitly out of scope (SPEC "Out of Scope") — stdin is the only required inp
 
 **Milestone 1 exit criteria**: every must-have requirement's happy path — arithmetic
 (including `%` and unary `+`/`-`), overflow, float, compound-assignment narrowing, and
-stdin input — runs correctly end-to-end, with tests covering lexer, parser, evaluator,
+stdin input — runs correctly end-to-end, with tests covering tokenizer, parser, evaluator,
 formatter, and integration.
 
 ## Milestone 2: Hardened / Full Interview Solution (error paths & edge cases)

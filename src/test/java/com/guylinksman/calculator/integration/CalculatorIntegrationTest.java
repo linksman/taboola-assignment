@@ -1,6 +1,6 @@
-package com.taboola.calculator.integration;
+package com.guylinksman.calculator.integration;
 
-import com.taboola.calculator.Calculator;
+import com.guylinksman.calculator.Calculator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

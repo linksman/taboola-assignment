@@ -1,9 +1,9 @@
-package com.taboola.calculator.eval;
+package com.guylinksman.calculator.eval;
 
-import com.taboola.calculator.ast.AssignmentStatement;
-import com.taboola.calculator.ast.Value;
-import com.taboola.calculator.lexer.Lexer;
-import com.taboola.calculator.parser.Parser;
+import com.guylinksman.calculator.ast.AssignmentStatement;
+import com.guylinksman.calculator.ast.Value;
+import com.guylinksman.calculator.parser.Parser;
+import com.guylinksman.calculator.tokenizer.Tokenizer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,9 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class PrecedenceTest {
 
     private static Value evaluate(String expression) {
-        Lexer lexer = new Lexer();
+        Tokenizer tokenizer = new Tokenizer();
         Environment env = new Environment();
-        AssignmentStatement statement = Parser.parseStatement(lexer.tokenize("result = " + expression, 1), 1);
+        AssignmentStatement statement = Parser.parseStatement(tokenizer.tokenize("result = " + expression, 1), 1);
         new Evaluator().execute(statement, env);
         return env.get("result");
     }

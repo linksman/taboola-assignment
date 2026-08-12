@@ -1,4 +1,4 @@
-package com.taboola.calculator.error;
+package com.guylinksman.calculator.error;
 
 /** Base of the calculator's exception hierarchy; always carries the 1-based input line number. */
 public abstract class CalculatorException extends RuntimeException {

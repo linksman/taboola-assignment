@@ -121,7 +121,7 @@ truncating `7.5` to `7`, exactly like `long i = 5; i += 2.5;` in real Java (REQ-
 - Errors are reported with the 1-based input line number and a human-readable message
   (not a raw exception stack trace) — see REQ-009, REQ-012, REQ-013, REQ-014.
 - Distinguish three error classes for clarity when explaining the design:
-  lexical (bad token), syntactic (bad grammar, including out-of-range literals and
+  tokenization (bad token), syntactic (bad grammar, including out-of-range literals and
   `++`/`--` on a non-variable), semantic/runtime (undefined variable, integer
   divide/modulo by zero).
 
@@ -152,7 +152,7 @@ truncating `7.5` to `7`, exactly like `long i = 5; i += 2.5;` in real Java (REQ-
 ## Non-Functional Requirements
 
 - Code must be small enough to explain line-by-line in an interview.
-- No external parsing-framework dependency (hand-rolled lexer/parser) — keeps the
+- No external parsing-framework dependency (hand-rolled tokenizer/parser) — keeps the
   solution self-contained and fully explainable.
 - Deterministic: same input always produces the same output.
 - Single-threaded batch evaluation — input is an ordered script, so there is no

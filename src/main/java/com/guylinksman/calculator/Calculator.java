@@ -1,12 +1,12 @@
-package com.taboola.calculator;
+package com.guylinksman.calculator;
 
-import com.taboola.calculator.ast.AssignmentStatement;
-import com.taboola.calculator.eval.Environment;
-import com.taboola.calculator.eval.Evaluator;
-import com.taboola.calculator.eval.Formatter;
-import com.taboola.calculator.lexer.Lexer;
-import com.taboola.calculator.lexer.Token;
-import com.taboola.calculator.parser.Parser;
+import com.guylinksman.calculator.ast.AssignmentStatement;
+import com.guylinksman.calculator.eval.Environment;
+import com.guylinksman.calculator.eval.Evaluator;
+import com.guylinksman.calculator.eval.Formatter;
+import com.guylinksman.calculator.parser.Parser;
+import com.guylinksman.calculator.tokenizer.Token;
+import com.guylinksman.calculator.tokenizer.Tokenizer;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public final class Calculator {
     }
 
     public static String run(List<String> lines) {
-        Lexer lexer = new Lexer();
+        Tokenizer tokenizer = new Tokenizer();
         Evaluator evaluator = new Evaluator();
         Environment env = new Environment();
 
@@ -32,7 +32,7 @@ public final class Calculator {
             if (line.isBlank()) {
                 continue;
             }
-            List<Token> tokens = lexer.tokenize(line, lineNumber);
+            List<Token> tokens = tokenizer.tokenize(line, lineNumber);
             AssignmentStatement statement = Parser.parseStatement(tokens, lineNumber);
             evaluator.execute(statement, env);
         }

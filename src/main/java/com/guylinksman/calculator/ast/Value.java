@@ -1,4 +1,4 @@
-package com.taboola.calculator.ast;
+package com.guylinksman.calculator.ast;
 
 /**
  * The two numeric kinds the calculator supports, each backed by a real Java

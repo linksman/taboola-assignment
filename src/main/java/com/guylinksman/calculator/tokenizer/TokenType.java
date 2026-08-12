@@ -1,4 +1,4 @@
-package com.taboola.calculator.lexer;
+package com.guylinksman.calculator.tokenizer;
 
 public enum TokenType {
     NUMBER,

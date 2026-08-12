@@ -1,6 +1,6 @@
-package com.taboola.calculator.eval;
+package com.guylinksman.calculator.eval;
 
-import com.taboola.calculator.ast.Value;
+import com.guylinksman.calculator.ast.Value;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

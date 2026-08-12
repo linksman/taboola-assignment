@@ -1,4 +1,4 @@
-package com.taboola.calculator.ast;
+package com.guylinksman.calculator.ast;
 
 import org.junit.jupiter.api.Test;
 

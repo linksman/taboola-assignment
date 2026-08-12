@@ -1,15 +1,15 @@
-package com.taboola.calculator.parser;
+package com.guylinksman.calculator.parser;
 
-import com.taboola.calculator.ast.AssignOperator;
-import com.taboola.calculator.ast.AssignmentStatement;
-import com.taboola.calculator.ast.BinaryOperator;
-import com.taboola.calculator.ast.Expr;
-import com.taboola.calculator.ast.IncDecOperator;
-import com.taboola.calculator.ast.UnaryOperator;
-import com.taboola.calculator.ast.Value;
-import com.taboola.calculator.error.ParseException;
-import com.taboola.calculator.lexer.Lexer;
-import com.taboola.calculator.lexer.Token;
+import com.guylinksman.calculator.ast.AssignOperator;
+import com.guylinksman.calculator.ast.AssignmentStatement;
+import com.guylinksman.calculator.ast.BinaryOperator;
+import com.guylinksman.calculator.ast.Expr;
+import com.guylinksman.calculator.ast.IncDecOperator;
+import com.guylinksman.calculator.ast.UnaryOperator;
+import com.guylinksman.calculator.ast.Value;
+import com.guylinksman.calculator.error.ParseException;
+import com.guylinksman.calculator.tokenizer.Token;
+import com.guylinksman.calculator.tokenizer.Tokenizer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ParserTest {
 
-    private final Lexer lexer = new Lexer();
+    private final Tokenizer tokenizer = new Tokenizer();
 
     private AssignmentStatement parse(String line) {
-        List<Token> tokens = lexer.tokenize(line, 1);
+        List<Token> tokens = tokenizer.tokenize(line, 1);
         return Parser.parseStatement(tokens, 1);
     }
 
@@ -153,7 +153,7 @@ class ParserTest {
     @ParameterizedTest(name = "[{index}] {1}: \"{0}\"")
     @MethodSource("malformedStatements")
     void rejectsMalformedSyntaxWithCorrectLine(String input, String description) {
-        List<Token> tokens = lexer.tokenize(input, 3);
+        List<Token> tokens = tokenizer.tokenize(input, 3);
         ParseException ex = assertThrows(ParseException.class, () -> Parser.parseStatement(tokens, 3),
                 description + " should be rejected: \"" + input + "\"");
         assertEquals(3, ex.line());

@@ -1,10 +1,10 @@
-package com.taboola.calculator.eval;
+package com.guylinksman.calculator.eval;
 
-import com.taboola.calculator.ast.AssignmentStatement;
-import com.taboola.calculator.ast.Value;
-import com.taboola.calculator.error.EvalException;
-import com.taboola.calculator.lexer.Lexer;
-import com.taboola.calculator.parser.Parser;
+import com.guylinksman.calculator.ast.AssignmentStatement;
+import com.guylinksman.calculator.ast.Value;
+import com.guylinksman.calculator.error.EvalException;
+import com.guylinksman.calculator.parser.Parser;
+import com.guylinksman.calculator.tokenizer.Tokenizer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EvaluatorTest {
 
-    private final Lexer lexer = new Lexer();
+    private final Tokenizer tokenizer = new Tokenizer();
     private final Evaluator evaluator = new Evaluator();
 
     private void run(Environment env, String line) {
@@ -21,7 +21,7 @@ class EvaluatorTest {
     }
 
     private void run(Environment env, String line, int lineNumber) {
-        AssignmentStatement statement = Parser.parseStatement(lexer.tokenize(line, lineNumber), lineNumber);
+        AssignmentStatement statement = Parser.parseStatement(tokenizer.tokenize(line, lineNumber), lineNumber);
         evaluator.execute(statement, env);
     }
 

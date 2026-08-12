@@ -1,16 +1,16 @@
-package com.taboola.calculator.lexer;
+package com.guylinksman.calculator.tokenizer;
 
-import com.taboola.calculator.error.LexException;
+import com.guylinksman.calculator.error.TokenizeException;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Turns one input line into a list of tokens, ending with an EOF sentinel.
- * Purely lexical: numeric literals are captured as raw text, not range-checked
+ * Only tokenizes: numeric literals are captured as raw text, not range-checked
  * or converted here (that happens in the parser).
  */
-public final class Lexer {
+public final class Tokenizer {
 
     public List<Token> tokenize(String line, int lineNumber) {
         List<Token> tokens = new ArrayList<>();
@@ -38,7 +38,7 @@ public final class Lexer {
                             i++;
                         }
                     } else {
-                        throw new LexException(lineNumber,
+                        throw new TokenizeException(lineNumber,
                                 "expected a digit after '.' at column " + (i + 1));
                     }
                 }
@@ -119,7 +119,7 @@ public final class Lexer {
                     tokens.add(new Token(TokenType.RPAREN, ")", start + 1));
                     i += 1;
                 }
-                default -> throw new LexException(lineNumber,
+                default -> throw new TokenizeException(lineNumber,
                         "unexpected character '" + c + "' at column " + (start + 1));
             }
         }

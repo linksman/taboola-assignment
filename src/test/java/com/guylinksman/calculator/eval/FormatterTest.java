@@ -1,6 +1,6 @@
-package com.taboola.calculator.eval;
+package com.guylinksman.calculator.eval;
 
-import com.taboola.calculator.ast.Value;
+import com.guylinksman.calculator.ast.Value;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

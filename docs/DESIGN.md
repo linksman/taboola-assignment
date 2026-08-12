@@ -5,11 +5,11 @@
 A classic small-interpreter pipeline, one statement (line) at a time:
 
 ```
-stdin lines -> Lexer -> Parser -> Evaluator -> Environment -> Formatter -> stdout
-                (tokens)  (AST)    (mutates)    (var state)
+stdin lines -> Tokenizer -> Parser -> Evaluator -> Environment -> Formatter -> stdout
+                (tokens)     (AST)    (mutates)    (var state)
 ```
 
-- **Lexer**: line of text → `List<Token>`. (REQ-001, REQ-003, REQ-004, REQ-005, REQ-013)
+- **Tokenizer**: line of text → `List<Token>`. (REQ-001, REQ-003, REQ-004, REQ-005, REQ-013)
 - **Parser**: `List<Token>` → one `AssignmentStatement` AST node, via hand-written
   recursive descent; also decides Integer-vs-Float kind for each numeric literal and
   rejects literals outside `long` range. (REQ-001, REQ-003, REQ-004, REQ-005, REQ-009,
@@ -30,7 +30,7 @@ keep every step explainable without introducing unfamiliar machinery.
 - `Token { TokenType type, String text, int column }`
   `TokenType`: `NUMBER, IDENT, PLUS, MINUS, STAR, SLASH, PERCENT, ASSIGN, PLUS_ASSIGN,
   MINUS_ASSIGN, STAR_ASSIGN, SLASH_ASSIGN, PERCENT_ASSIGN, INCREMENT, DECREMENT,
-  LPAREN, RPAREN, EOF`. The lexer captures a `NUMBER` token's raw text as-is (digits,
+  LPAREN, RPAREN, EOF`. The tokenizer captures a `NUMBER` token's raw text as-is (digits,
   optionally followed by `.` and more digits — plain decimals only, no scientific
   notation); it does not itself interpret magnitude or range-check.
 
@@ -99,7 +99,7 @@ just adopts the RHS's kind (SPEC "Deliberate Deviations").
 
 1. Read all input lines, tracking a 1-based line number for error messages.
 2. For each non-blank line (blank lines skipped — see SPEC edge cases):
-   a. `Lexer.tokenize(line)` → tokens (throws `LexException` on bad characters).
+   a. `Tokenizer.tokenize(line)` → tokens (throws `TokenizeException` on bad characters).
    b. `Parser.parseStatement(tokens)` → `AssignmentStatement` (throws `ParseException`
       on bad grammar, including an out-of-`long`-range literal — REQ-009, REQ-013).
       Grammar, in precedence order (low → high):
@@ -145,7 +145,7 @@ just adopts the RHS's kind (SPEC "Deliberate Deviations").
 
 Two stages, matching the three error classes in SPEC:
 
-- **Syntactic** (lexing + parsing): structure of the line, numeric-literal kind
+- **Syntactic** (tokenizing + parsing): structure of the line, numeric-literal kind
   classification, and `long`-range checking are done before any evaluation happens
   for that line. Catches REQ-009 and REQ-013 cases.
 - **Semantic/runtime** (evaluation): checked while walking the AST against live state.
@@ -157,7 +157,7 @@ Exception hierarchy, each carrying the 1-based line number and a plain-English m
 
 ```
 CalculatorException (abstract)
- ├─ LexException
+ ├─ TokenizeException
  ├─ ParseException
  └─ EvalException
 ```
@@ -170,7 +170,7 @@ traded off below against collecting all errors.
 
 JUnit 5, one test class per layer plus one integration class:
 
-- `LexerTest` — token streams for valid lines and one test per lexical error;
+- `TokenizerTest` — token streams for valid lines and one test per tokenization error;
   includes a decimal literal and a digit string that overflows `long`.
 - `ParserTest` — AST shape for each grammar rule, precedence/associativity cases
   (parameterized), literal-kind classification (`IntValue` vs `FloatValue`), an

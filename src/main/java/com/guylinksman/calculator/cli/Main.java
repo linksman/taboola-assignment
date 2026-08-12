@@ -1,7 +1,7 @@
-package com.taboola.calculator.cli;
+package com.guylinksman.calculator.cli;
 
-import com.taboola.calculator.Calculator;
-import com.taboola.calculator.error.CalculatorException;
+import com.guylinksman.calculator.Calculator;
+import com.guylinksman.calculator.error.CalculatorException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
