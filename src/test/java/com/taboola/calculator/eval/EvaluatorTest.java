@@ -2,11 +2,14 @@ package com.taboola.calculator.eval;
 
 import com.taboola.calculator.ast.AssignmentStatement;
 import com.taboola.calculator.ast.Value;
+import com.taboola.calculator.error.EvalException;
 import com.taboola.calculator.lexer.Lexer;
 import com.taboola.calculator.parser.Parser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EvaluatorTest {
 
@@ -14,7 +17,11 @@ class EvaluatorTest {
     private final Evaluator evaluator = new Evaluator();
 
     private void run(Environment env, String line) {
-        AssignmentStatement statement = Parser.parseStatement(lexer.tokenize(line, 1), 1);
+        run(env, line, 1);
+    }
+
+    private void run(Environment env, String line, int lineNumber) {
+        AssignmentStatement statement = Parser.parseStatement(lexer.tokenize(line, lineNumber), lineNumber);
         evaluator.execute(statement, env);
     }
 
@@ -102,5 +109,48 @@ class EvaluatorTest {
 
         run(env, "y = -(2 + 3)");
         assertEquals(new Value.IntValue(-5), valueOf(env, "y"));
+    }
+
+    @Test
+    void readingUndefinedVariableThrowsWithCorrectLine() {
+        Environment env = new Environment();
+        EvalException ex = assertThrows(EvalException.class, () -> run(env, "x = y + 1", 7));
+        assertEquals(7, ex.line());
+        assertTrue(ex.getMessage().contains("y"), "message should mention the undefined variable: " + ex.getMessage());
+    }
+
+    @Test
+    void compoundAssignmentToUndefinedVariableThrows() {
+        Environment env = new Environment();
+        assertThrows(EvalException.class, () -> run(env, "i += 1"));
+    }
+
+    @Test
+    void integerDivisionByZeroThrows() {
+        Environment env = new Environment();
+        assertThrows(EvalException.class, () -> run(env, "x = 5 / 0"));
+    }
+
+    @Test
+    void integerModuloByZeroThrows() {
+        Environment env = new Environment();
+        assertThrows(EvalException.class, () -> run(env, "x = 5 % 0"));
+    }
+
+    @Test
+    void floatDivisionByZeroDoesNotThrow() {
+        Environment env = new Environment();
+        run(env, "x = 5.0 / 0");
+        assertEquals(new Value.FloatValue(Double.POSITIVE_INFINITY), valueOf(env, "x"));
+
+        run(env, "y = 0.0 / 0.0");
+        assertEquals(Double.NaN, ((Value.FloatValue) valueOf(env, "y")).raw());
+    }
+
+    @Test
+    void floatModuloByZeroDoesNotThrow() {
+        Environment env = new Environment();
+        run(env, "x = 5.0 % 0");
+        assertEquals(Double.NaN, ((Value.FloatValue) valueOf(env, "x")).raw());
     }
 }

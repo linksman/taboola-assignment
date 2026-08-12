@@ -57,4 +57,35 @@ class CalculatorIntegrationTest {
         assertEquals("(x=-2)", Calculator.run(List.of(
                 "x = -5 + 3")));
     }
+
+    @Test
+    void emptyInputProducesEmptyParens() {
+        assertEquals("()", Calculator.run(List.of()));
+    }
+
+    @Test
+    void blankAndWhitespaceOnlyLinesAreIgnored() {
+        assertEquals("(i=1)", Calculator.run(List.of(
+                "",
+                "i = 1",
+                "   ",
+                "\t")));
+    }
+
+    @Test
+    void reassignmentKeepsFirstSeenOrderButLastValue() {
+        assertEquals("(i=5,j=1)", Calculator.run(List.of(
+                "i = 0",
+                "i = 5",
+                "j = 1")));
+    }
+
+    @Test
+    void plainAssignmentMayChangeVariableKind() {
+        // Disclosed deviation from Java (SPEC "Deliberate Deviations"): plain '=' has no
+        // static type to preserve, unlike compound assignment (see compoundAssignmentNarrowing).
+        assertEquals("(x=1.5)", Calculator.run(List.of(
+                "x = 1",
+                "x = 1.5")));
+    }
 }

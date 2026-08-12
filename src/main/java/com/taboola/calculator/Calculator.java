@@ -29,6 +29,9 @@ public final class Calculator {
         int lineNumber = 0;
         for (String line : lines) {
             lineNumber++;
+            if (line.isBlank()) {
+                continue;
+            }
             List<Token> tokens = lexer.tokenize(line, lineNumber);
             AssignmentStatement statement = Parser.parseStatement(tokens, lineNumber);
             evaluator.execute(statement, env);

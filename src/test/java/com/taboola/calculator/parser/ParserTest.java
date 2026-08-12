@@ -11,8 +11,12 @@ import com.taboola.calculator.error.ParseException;
 import com.taboola.calculator.lexer.Lexer;
 import com.taboola.calculator.lexer.Token;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -146,10 +150,26 @@ class ParserTest {
         assertEquals(new Expr.PostfixIncDec(IncDecOperator.DECREMENT, "i"), parse("x = i--").rhs());
     }
 
-    @Test
-    void incDecOnNonVariableIsRejected() {
-        // Must not crash the parser (Milestone 1 requirement); dedicated error-message
-        // coverage for this case is added in Milestone 2.
-        assertThrows(ParseException.class, () -> parse("x = (x + 1)++"));
+    @ParameterizedTest(name = "[{index}] {1}: \"{0}\"")
+    @MethodSource("malformedStatements")
+    void rejectsMalformedSyntaxWithCorrectLine(String input, String description) {
+        List<Token> tokens = lexer.tokenize(input, 3);
+        ParseException ex = assertThrows(ParseException.class, () -> Parser.parseStatement(tokens, 3),
+                description + " should be rejected: \"" + input + "\"");
+        assertEquals(3, ex.line());
+    }
+
+    static Stream<Arguments> malformedStatements() {
+        return Stream.of(
+                Arguments.of("x = (5 + 3", "unmatched opening paren"),
+                Arguments.of("x = 5 + 3)", "unmatched closing paren"),
+                Arguments.of("x = 5 +", "missing right operand"),
+                Arguments.of("x = * 5", "missing left operand"),
+                Arguments.of("5 = x", "invalid assignment target (literal on LHS)"),
+                Arguments.of("x + y = 5", "invalid assignment target (expression on LHS)"),
+                Arguments.of("x = (x + 1)++", "'++' applied to a non-variable"),
+                Arguments.of("x = (x + 1)--", "'--' applied to a non-variable"),
+                Arguments.of("x =", "missing right-hand side entirely"),
+                Arguments.of("x", "missing assignment operator and expression"));
     }
 }

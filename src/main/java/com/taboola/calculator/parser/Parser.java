@@ -58,8 +58,8 @@ public final class Parser {
             case MINUS_ASSIGN -> AssignOperator.MINUS_ASSIGN;
             case STAR_ASSIGN -> AssignOperator.STAR_ASSIGN;
             case SLASH_ASSIGN -> AssignOperator.SLASH_ASSIGN;
-            default -> throw error("expected an assignment operator ('=', '+=', '-=', '*=', '/=') but found '"
-                    + token.text() + "'");
+            default -> throw error("expected an assignment operator ('=', '+=', '-=', '*=', '/=') but found "
+                    + describe(token));
         };
     }
 
@@ -136,7 +136,7 @@ public final class Parser {
                 expect(TokenType.RPAREN, "expected a closing ')'");
                 yield inner;
             }
-            default -> throw error("expected a number, variable, '(' or '++'/'--' but found '" + token.text() + "'");
+            default -> throw error("expected a number, variable, '(' or '++'/'--' but found " + describe(token));
         };
     }
 
@@ -168,10 +168,14 @@ public final class Parser {
         if (check(type)) {
             return advance();
         }
-        throw error(message + ", found '" + peek().text() + "'");
+        throw error(message + ", found " + describe(peek()));
     }
 
     private ParseException error(String message) {
         return new ParseException(line, message);
+    }
+
+    private static String describe(Token token) {
+        return token.type() == TokenType.EOF ? "end of input" : "'" + token.text() + "'";
     }
 }
