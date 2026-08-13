@@ -164,7 +164,35 @@ CalculatorException (abstract)
 
 `main()` catches `CalculatorException`, prints `line <n>: <message>` to stderr, exits
 non-zero. Fail-fast (SPEC "Error Handling") — simplest to implement/test/explain;
-traded off below against collecting all errors.
+traded off below against collecting all errors. It also passes the failure to the
+logging component below before exiting.
+
+## Failure Logging
+
+A small, separately-testable `logging` package records every failure `Main` catches,
+independent of the concise stderr message above:
+
+- **`Logger`** — a one-method interface (`logFailure(FailureEvent)`), deliberately
+  scoped to failures only, not a general info/debug/warn framework nobody asked for.
+- **`FailureEvent`** — an immutable record capturing everything useful about one
+  failure: timestamp, exception type, the 1-based line (`0` if not applicable),
+  the offending input line's actual text (looked up from the original input, not
+  just the exception's own message), the message, and the full stack trace. Built
+  once via `FailureEvent.of(...)` so every `Logger` implementation renders the same
+  data instead of each re-deriving it.
+- **`ConsoleLogger`** / **`FileLogger`** — write the same `LogFormatter`-rendered
+  text to a `PrintStream` (stderr by default — stdout stays reserved for the
+  calculator's own output, per "Interface / API Requirements") and to a file
+  (append mode, creating parent directories on first use) respectively.
+- **`MultiLogger`** — fans one event out to several `Logger`s. `Main` wires up
+  `new MultiLogger(new ConsoleLogger(), new FileLogger(path))`; adding an
+  HTTP-backed `Logger` later is a new class plus one constructor argument here,
+  with zero changes to `ConsoleLogger`/`FileLogger` themselves.
+
+`Main` also now catches plain `RuntimeException` (a bug, not a user-input error) in
+a second `catch` block, purely so it gets logged with a full stack trace too — the
+stderr message in that case is intentionally generic (no line to point at), and the
+failure log file is the only detailed record of it.
 
 ## Testing Approach
 
@@ -186,6 +214,11 @@ JUnit 5, one test class per layer plus one integration class:
 - `CalculatorIntegrationTest` — feeds the SPEC example end-to-end plus an overflow
   example, a float example, and a compound-assignment-narrowing example, asserts
   exact output strings; primary regression/demo test.
+- `FailureEventTest` / `LogFormatterTest` / `ConsoleLoggerTest` / `FileLoggerTest` /
+  `MultiLoggerTest` — the logging package tested the same way as everything else:
+  each class in isolation (a fake in-memory `Logger` stands in for one of
+  `MultiLogger`'s loggers; `ConsoleLogger`/`FileLogger` are checked against a captured
+  `PrintStream`/a `@TempDir` file, not real stderr or a real log path).
 
 ## Productionization Notes
 
@@ -197,6 +230,9 @@ Out of scope for this exercise, but worth naming if asked:
 - Package as a library (stable `Calculator.run(...)` API) with the CLI as a thin
   wrapper, so it can be embedded elsewhere.
 - Streaming evaluation (don't buffer all lines) if input could be very large.
+- An HTTP-backed `Logger` (ship failures to a monitoring endpoint) — the `logging`
+  package (`Logger` interface + `MultiLogger`) is already shaped for this; it's a
+  new class implementing `Logger`, not a redesign.
 
 ## Trade-offs
 

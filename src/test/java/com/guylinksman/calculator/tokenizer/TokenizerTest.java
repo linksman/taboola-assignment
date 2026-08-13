@@ -143,4 +143,27 @@ class TokenizerTest {
     void rejectsDotWithoutFollowingDigit() {
         assertThrows(TokenizeException.class, () -> tokenizer.tokenize("x = 5.", 1));
     }
+
+    @Test
+    void rejectsNonAsciiIdentifierCharacter() {
+        // SPEC "Data Requirements": identifiers are [a-zA-Z_][a-zA-Z0-9_]* - ASCII
+        // only. An accented letter must not be silently accepted as an identifier.
+        TokenizeException ex = assertThrows(TokenizeException.class, () -> tokenizer.tokenize("é = 1", 1));
+        assertEquals(1, ex.line());
+    }
+
+    @Test
+    void rejectsNonAsciiDigitCharacter() {
+        // U+0660 ARABIC-INDIC DIGIT ZERO is a Unicode digit but not an ASCII one.
+        TokenizeException ex = assertThrows(TokenizeException.class, () -> tokenizer.tokenize("x = ٠1", 1));
+        assertEquals(1, ex.line());
+    }
+
+    @Test
+    void acceptsUnderscoreAndDigitsAfterFirstCharacterInIdentifier() {
+        assertTokens(tokenizer.tokenize("_a1_B2 = 0", 1),
+                TokenType.IDENT, "_a1_B2",
+                TokenType.ASSIGN, "=",
+                TokenType.NUMBER, "0");
+    }
 }

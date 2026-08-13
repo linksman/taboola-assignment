@@ -26,15 +26,15 @@ public final class Tokenizer {
                 continue;
             }
 
-            if (Character.isDigit(c)) {
+            if (isAsciiDigit(c)) {
                 i++;
-                while (i < n && Character.isDigit(line.charAt(i))) {
+                while (i < n && isAsciiDigit(line.charAt(i))) {
                     i++;
                 }
                 if (i < n && line.charAt(i) == '.') {
-                    if (i + 1 < n && Character.isDigit(line.charAt(i + 1))) {
+                    if (i + 1 < n && isAsciiDigit(line.charAt(i + 1))) {
                         i++;
-                        while (i < n && Character.isDigit(line.charAt(i))) {
+                        while (i < n && isAsciiDigit(line.charAt(i))) {
                             i++;
                         }
                     } else {
@@ -46,9 +46,9 @@ public final class Tokenizer {
                 continue;
             }
 
-            if (Character.isLetter(c) || c == '_') {
+            if (isIdentifierStart(c)) {
                 i++;
-                while (i < n && (Character.isLetterOrDigit(line.charAt(i)) || line.charAt(i) == '_')) {
+                while (i < n && isIdentifierPart(line.charAt(i))) {
                     i++;
                 }
                 tokens.add(new Token(TokenType.IDENT, line.substring(start, i), start + 1));
@@ -130,5 +130,24 @@ public final class Tokenizer {
 
     private static char peek(String line, int index) {
         return index < line.length() ? line.charAt(index) : '\0';
+    }
+
+    // SPEC "Data Requirements": variable names are [a-zA-Z_][a-zA-Z0-9_]* - ASCII
+    // only. Character.isDigit/isLetter/isLetterOrDigit are Unicode-aware and would
+    // accept things like Arabic-Indic digits or accented letters, which are neither
+    // documented nor round-trippable through Long.parseLong/Double.parseDouble.
+
+    /** Public so Parser can reuse this exact definition (e.g. for underflow detection
+     *  on already-tokenized NUMBER text) instead of re-deriving its own digit range. */
+    public static boolean isAsciiDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private static boolean isIdentifierStart(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    }
+
+    private static boolean isIdentifierPart(char c) {
+        return isIdentifierStart(c) || isAsciiDigit(c);
     }
 }

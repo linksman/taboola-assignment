@@ -19,17 +19,20 @@ public final class Evaluator {
 
     public void execute(AssignmentStatement statement, Environment env) {
         int line = statement.line();
-        Value rhsValue = evaluate(statement.rhs(), env, line);
         String name = statement.varName();
 
         if (statement.op() == AssignOperator.ASSIGN) {
             // Plain '=' adopts the RHS's kind outright (SPEC "Deliberate Deviations").
-            env.set(name, rhsValue);
+            env.set(name, evaluate(statement.rhs(), env, line));
             return;
         }
 
+        // Compound assignment (JLS 15.26.2): the left-hand operand's current value is
+        // read and saved BEFORE the right-hand operand is evaluated - this matters
+        // when the RHS mutates the same variable, e.g. `i += i++` or `i += ++i`.
         requireDefined(env, name, line);
         Value current = env.get(name);
+        Value rhsValue = evaluate(statement.rhs(), env, line);
         Value combined = applyBinary(current, toBinaryOperator(statement.op()), rhsValue, line);
         // Compound assignment narrows back to the variable's current kind, matching
         // Java's implicit compound-assignment cast (JLS 5.2) - see DESIGN REQ-004.

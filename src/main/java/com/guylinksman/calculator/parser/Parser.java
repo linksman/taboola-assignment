@@ -10,6 +10,7 @@ import com.guylinksman.calculator.ast.Value;
 import com.guylinksman.calculator.error.ParseException;
 import com.guylinksman.calculator.tokenizer.Token;
 import com.guylinksman.calculator.tokenizer.TokenType;
+import com.guylinksman.calculator.tokenizer.Tokenizer;
 
 import java.util.List;
 
@@ -22,8 +23,13 @@ import java.util.List;
  * term       := unary (('*' | '/' | '%') unary)*
  * unary      := ('-' | '+') unary | postfix
  * postfix    := primary ('++' | '--')?
- * primary    := NUMBER | IDENT | '++' IDENT | '--' IDENT | '(' expression ')'
+ * primary    := NUMBER | IDENT | ('++' | '--') primary | '(' expression ')'
  * </pre>
+ *
+ * Both prefix and postfix {@code ++}/{@code --} additionally require their operand
+ * to resolve to a variable reference (SPEC REQ-005) - a context-sensitive check
+ * applied after parsing, same as real Java's "variable required" restriction,
+ * rather than being baked into the grammar itself.
  */
 public final class Parser {
 
@@ -90,6 +96,29 @@ public final class Parser {
     }
 
     private Expr unary() {
+        if (check(TokenType.MINUS) && checkNext(TokenType.NUMBER)) {
+            Token numberToken = peekAt(1);
+            String text = numberToken.text();
+            // JLS 3.10.1: the magnitude 2^63 (one past Long.MAX_VALUE, i.e. what
+            // Long.parseLong alone would reject) is a legal literal only when it is
+            // the *immediate* operand of unary minus - it's the only way to write
+            // Long.MIN_VALUE at all, since there's no positive literal for it. Fold
+            // it directly rather than negating a literal that can't parse on its own.
+            if (text.indexOf('.') < 0 && !fitsInLong(text)) {
+                try {
+                    long value = Long.parseLong("-" + text);
+                    advance(); // '-'
+                    advance(); // the NUMBER token
+                    // The folded literal is still a primary-level expression, so a
+                    // trailing '++'/'--' must go through the same variable-required
+                    // check postfix() applies everywhere else (e.g. `-9223372036854775808++`).
+                    return applyPostfixIfPresent(new Expr.NumberLiteral(new Value.IntValue(value)));
+                } catch (NumberFormatException ignored) {
+                    // text is out of range even negated (e.g. -99999999999999999999) -
+                    // fall through to the ordinary path below, which raises the right error.
+                }
+            }
+        }
         if (check(TokenType.MINUS) || check(TokenType.PLUS)) {
             Token op = advance();
             Expr operand = unary();
@@ -98,18 +127,40 @@ public final class Parser {
         return postfix();
     }
 
+    private static boolean fitsInLong(String digits) {
+        try {
+            Long.parseLong(digits);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private Expr postfix() {
-        Expr expr = primary();
+        return applyPostfixIfPresent(primary());
+    }
+
+    /**
+     * Shared by postfix() and the {@code Long.MIN_VALUE} literal fold in unary() -
+     * both produce a primary-level expression that may be followed by a postfix
+     * '++'/'--', which is only legal when that expression is a variable.
+     */
+    private Expr applyPostfixIfPresent(Expr expr) {
         if (check(TokenType.INCREMENT) || check(TokenType.DECREMENT)) {
-            if (!(expr instanceof Expr.VariableRef varRef)) {
-                throw error("'++'/'--' can only be applied to a variable");
-            }
+            Expr.VariableRef varRef = requireVariable(expr);
             Token op = advance();
             return new Expr.PostfixIncDec(
                     op.type() == TokenType.INCREMENT ? IncDecOperator.INCREMENT : IncDecOperator.DECREMENT,
                     varRef.name());
         }
         return expr;
+    }
+
+    private Expr.VariableRef requireVariable(Expr expr) {
+        if (expr instanceof Expr.VariableRef varRef) {
+            return varRef;
+        }
+        throw error("'++'/'--' can only be applied to a variable");
     }
 
     private Expr primary() {
@@ -121,10 +172,10 @@ public final class Parser {
             }
             case INCREMENT, DECREMENT -> {
                 advance();
-                Token identToken = expect(TokenType.IDENT, "'++'/'--' can only be applied to a variable");
+                Expr.VariableRef varRef = requireVariable(primary());
                 yield new Expr.PrefixIncDec(
                         token.type() == TokenType.INCREMENT ? IncDecOperator.INCREMENT : IncDecOperator.DECREMENT,
-                        identToken.text());
+                        varRef.name());
             }
             case IDENT -> {
                 advance();
@@ -143,7 +194,18 @@ public final class Parser {
     private Value parseNumber(Token token) {
         String text = token.text();
         if (text.indexOf('.') >= 0) {
-            return new Value.FloatValue(Double.parseDouble(text));
+            double value = Double.parseDouble(text);
+            // JLS 3.10.2: a nonzero floating-point literal that rounds to infinity or
+            // to zero is a compile-time error in real Java - only the literal itself is
+            // restricted this way; Infinity/zero *produced by arithmetic* (e.g. 1.0 / 0)
+            // is unaffected, since that never goes through this method.
+            if (Double.isInfinite(value)) {
+                throw new ParseException(line, "floating-point literal too large: " + text);
+            }
+            if (value == 0.0 && hasNonZeroDigit(text)) {
+                throw new ParseException(line, "floating-point literal too small: " + text);
+            }
+            return new Value.FloatValue(value);
         }
         try {
             return new Value.IntValue(Long.parseLong(text));
@@ -152,12 +214,35 @@ public final class Parser {
         }
     }
 
+    private static boolean hasNonZeroDigit(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            // Reuses Tokenizer's canonical ASCII-digit definition rather than
+            // re-deriving the '0'-'9' range independently.
+            if (Tokenizer.isAsciiDigit(c) && c != '0') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean check(TokenType type) {
         return peek().type() == type;
     }
 
+    private boolean checkNext(TokenType type) {
+        return peekAt(1).type() == type;
+    }
+
     private Token peek() {
-        return tokens.get(pos);
+        return peekAt(0);
+    }
+
+    /** Bounded lookahead shared by peek()/check()/checkNext() - past the end of the
+     *  token stream (which always ends with EOF) simply keeps returning that EOF. */
+    private Token peekAt(int offset) {
+        int idx = pos + offset;
+        return idx < tokens.size() ? tokens.get(idx) : tokens.get(tokens.size() - 1);
     }
 
     private Token advance() {
