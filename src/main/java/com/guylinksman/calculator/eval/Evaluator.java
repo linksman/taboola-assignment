@@ -19,24 +19,24 @@ public final class Evaluator {
 
     public void execute(AssignmentStatement statement, Environment env) {
         int line = statement.line();
-        String name = statement.varName();
+        String varName = statement.varName();
 
         if (statement.op() == AssignOperator.ASSIGN) {
             // Plain '=' adopts the RHS's kind outright (SPEC "Deliberate Deviations").
-            env.set(name, evaluate(statement.rhs(), env, line));
+            env.set(varName, evaluate(statement.rhs(), env, line));
             return;
         }
 
         // Compound assignment (JLS 15.26.2): the left-hand operand's current value is
         // read and saved BEFORE the right-hand operand is evaluated - this matters
         // when the RHS mutates the same variable, e.g. `i += i++` or `i += ++i`.
-        requireDefined(env, name, line);
-        Value current = env.get(name);
+        assertVarNameDefined(env, varName, line);
+        Value current = env.get(varName);
         Value rhsValue = evaluate(statement.rhs(), env, line);
         Value combined = applyBinary(current, toBinaryOperator(statement.op()), rhsValue, line);
         // Compound assignment narrows back to the variable's current kind, matching
         // Java's implicit compound-assignment cast (JLS 5.2) - see DESIGN REQ-004.
-        env.set(name, narrowToKind(current, combined));
+        env.set(varName, narrowToKind(current, combined));
     }
 
     private Value evaluate(Expr expr, Environment env, int line) {
@@ -44,7 +44,7 @@ public final class Evaluator {
             return literal.value();
         }
         if (expr instanceof Expr.VariableRef ref) {
-            requireDefined(env, ref.name(), line);
+            assertVarNameDefined(env, ref.name(), line);
             return env.get(ref.name());
         }
         if (expr instanceof Expr.BinaryOp binaryOp) {
@@ -57,13 +57,13 @@ public final class Evaluator {
             return applyUnary(unaryOp.op(), value);
         }
         if (expr instanceof Expr.PrefixIncDec incDec) {
-            requireDefined(env, incDec.varName(), line);
+            assertVarNameDefined(env, incDec.varName(), line);
             Value updated = step(env.get(incDec.varName()), incDec.op());
             env.set(incDec.varName(), updated);
             return updated;
         }
         if (expr instanceof Expr.PostfixIncDec incDec) {
-            requireDefined(env, incDec.varName(), line);
+            assertVarNameDefined(env, incDec.varName(), line);
             Value original = env.get(incDec.varName());
             env.set(incDec.varName(), step(original, incDec.op()));
             return original;
@@ -140,7 +140,7 @@ public final class Evaluator {
         };
     }
 
-    private void requireDefined(Environment env, String name, int line) {
+    private void assertVarNameDefined(Environment env, String name, int line) {
         if (!env.has(name)) {
             throw new EvalException(line, "undefined variable '" + name + "'");
         }

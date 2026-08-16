@@ -118,8 +118,14 @@ truncating `7.5` to `7`, exactly like `long i = 5; i += 2.5;` in real Java (REQ-
 ## Error Handling
 
 - **Fail-fast**: processing stops at the first error; nothing after it is evaluated.
-- Errors are reported with the 1-based input line number and a human-readable message
-  (not a raw exception stack trace) — see REQ-009, REQ-012, REQ-013, REQ-014.
+- Errors are reported with the 1-based input line number and a human-readable
+  message — see REQ-009, REQ-012, REQ-013, REQ-014.
+- The full failure detail, including a stack trace, is surfaced to the user on
+  **stderr** (not just written to the log file) — a user debugging a failure
+  from the terminal shouldn't have to go find `logs/calculator-failures.log`
+  to see why. This applies identically regardless of how the CLI is invoked
+  (`java -cp ... Main` against compiled classes, or `java -jar` against the
+  packaged jar) — both are the same `Main` entry point.
 - Distinguish three error classes for clarity when explaining the design:
   tokenization (bad token), syntactic (bad grammar, including out-of-range literals and
   `++`/`--` on a non-variable), semantic/runtime (undefined variable, integer

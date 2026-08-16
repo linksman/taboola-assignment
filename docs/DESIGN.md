@@ -162,15 +162,16 @@ CalculatorException (abstract)
  └─ EvalException
 ```
 
-`main()` catches `CalculatorException`, prints `line <n>: <message>` to stderr, exits
+`main()` catches `CalculatorException` (and, separately, plain `RuntimeException` for
+unexpected bugs), hands the failure to the logging component below, and exits
 non-zero. Fail-fast (SPEC "Error Handling") — simplest to implement/test/explain;
-traded off below against collecting all errors. It also passes the failure to the
-logging component below before exiting.
+traded off below against collecting all errors.
 
 ## Failure Logging
 
-A small, separately-testable `logging` package records every failure `Main` catches,
-independent of the concise stderr message above:
+A small, separately-testable `logging` package is the *only* thing that renders a
+caught failure for the user — there's no separate concise `println` in `Main`
+itself, so stderr and the log file show the identical rendering:
 
 - **`Logger`** — a one-method interface (`logFailure(FailureEvent)`), deliberately
   scoped to failures only, not a general info/debug/warn framework nobody asked for.
@@ -189,10 +190,10 @@ independent of the concise stderr message above:
   HTTP-backed `Logger` later is a new class plus one constructor argument here,
   with zero changes to `ConsoleLogger`/`FileLogger` themselves.
 
-`Main` also now catches plain `RuntimeException` (a bug, not a user-input error) in
-a second `catch` block, purely so it gets logged with a full stack trace too — the
-stderr message in that case is intentionally generic (no line to point at), and the
-failure log file is the only detailed record of it.
+`Main` also catches plain `RuntimeException` (a bug, not a user-input error) in a
+second `catch` block, purely so it gets the same `MultiLogger` treatment — logged
+with a full stack trace to both stderr and the failure log file, same as a
+`CalculatorException`, just without a line number to point at.
 
 ## Testing Approach
 

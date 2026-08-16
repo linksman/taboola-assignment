@@ -35,16 +35,9 @@ public final class Main {
         try {
             System.out.println(Calculator.run(lines));
         } catch (CalculatorException e) {
-            // The concise "line N: message" line is the documented CLI contract
-            // (SPEC "Error Handling") - printed first and unchanged. The failure
-            // log entry that follows is additional detail, not a replacement for it.
-            System.err.println(e.getMessage());
             logger.logFailure(FailureEvent.of(e, lines));
             System.exit(1);
-        } catch (RuntimeException e) {
-            // A bug, not a user-input error: no line to point at, so there's no
-            // concise message to print - the failure log is the only record of it.
-            System.err.println("an unexpected error occurred - see " + FAILURE_LOG_FILE + " for details");
+        } catch (RuntimeException e){ 
             logger.logFailure(FailureEvent.of(e, lines));
             System.exit(1);
         }
